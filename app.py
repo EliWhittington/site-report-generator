@@ -1,60 +1,23 @@
 import streamlit as st
 from docx import Document
 from docx.shared import Inches, Pt
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.oxml import OxmlElement
-from docx.oxml.ns import qn
 from PIL import Image, ImageOps
 from datetime import date
+import os
 import io
 import re
 import tempfile
 
-# === Page config with dark green primary color ===
-st.set_page_config(
-    page_title="Site Report Generator",
-    page_icon="📷",
-    layout="wide",
-    initial_sidebar_state="auto"
-)
+# === Streamlit App Config ===
+st.set_page_config(page_title="Site Report Generator", layout="wide")
+st.title("📷 Site Observation Report Generator")
 
-# === Custom CSS for Parks Canada green and top-right logo ===
-st.markdown("""
-    <style>
-    .st-emotion-cache-1v0mbdj {
-        background-color: #004225 !important;  /* Dark green */
-    }
-    .st-emotion-cache-6qob1r {
-        color: white !important;
-    }
-    .report-title {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .report-title h1 {
-        color: #004225;
-    }
-    .logo {
-        width: 150px;
-        float: right;
-        margin-top: -30px;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# === App header with logo ===
-col1, col2 = st.columns([5, 1])
-with col1:
-    st.title("📷 Site Observation Report Generator")
-with col2:
-    st.image("https://upload.wikimedia.org/wikipedia/en/thumb/c/c6/Parks_Canada_logo.svg/320px-Parks_Canada_logo.svg.png", use_column_width=True)
-
-# === Helpers ===
+# === Helper: Extract number from filename for sorting ===
 def extract_number(filename):
     match = re.search(r'(\d+)', filename)
     return int(match.group(1)) if match else float('inf')
 
+# === Resize image ===
 def resize_image(image_bytes, max_dim):
     img = Image.open(io.BytesIO(image_bytes))
     img = ImageOps.exif_transpose(img)
@@ -62,32 +25,13 @@ def resize_image(image_bytes, max_dim):
     img.thumbnail((max_dim, max_dim))
     return img
 
-def add_footer_with_page_number(section):
-    footer = section.footer
-    paragraph = footer.paragraphs[0]
-    paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    run = paragraph.add_run()
-    fldChar1 = OxmlElement('w:fldChar')
-    fldChar1.set(qn('w:fldCharType'), 'begin')
-    instrText = OxmlElement('w:instrText')
-    instrText.set(qn('xml:space'), 'preserve')
-    instrText.text = "PAGE"
-    fldChar2 = OxmlElement('w:fldChar')
-    fldChar2.set(qn('w:fldCharType'), 'separate')
-    fldChar3 = OxmlElement('w:fldChar')
-    fldChar3.set(qn('w:fldCharType'), 'end')
-    run._r.extend([fldChar1, instrText, fldChar2, fldChar3])
-
+# === Generate the report ===
 def generate_report(images, weather, subcontractors, areas, max_dim, quality):
     doc = Document()
 
-    # === Page numbers ===
-    section = doc.sections[0]
-    add_footer_with_page_number(section)
-
-    # === Title Page ===
+    # === Title ===
     title_paragraph = doc.add_paragraph()
-    title_paragraph.alignment = 1
+    title_paragraph.alignment = 1  # Center
     run = title_paragraph.add_run("Project Observation Report")
     run.font.name = 'Calibri'
     run.font.size = Pt(28)
@@ -95,6 +39,7 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
 
     today_str = date.today().strftime("%B %d, %Y")
 
+    # === Static Fields ===
     project_name = "National Fire Cache Building                                        -"
     user_name = "Eli Whittington"
     email = "eli.whittington@pc.gc.ca"
@@ -119,8 +64,9 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
     add_field("Address", address)
     add_field("Conditions", f"{weather} °C")
 
-    doc.add_paragraph()
+    doc.add_paragraph()  # Spacing
 
+    # === Subcontractors ===
     doc.add_paragraph("Subcontractors Present:", style="Heading 2")
     for s in subcontractors:
         doc.add_paragraph(f"    - {s}")
@@ -131,10 +77,10 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
 
     doc.add_page_break()
 
-    # === Insert 2 images per page with no spacing ===
+    # === Insert 2 Images Per Page ===
     for i in range(0, len(images), 2):
         p1 = doc.add_paragraph()
-        p1.alignment = 1
+        p1.alignment = 1  # Center
         run1 = p1.add_run()
         run1.add_picture(images[i], width=Inches(5.93), height=Inches(4.45))
         p1.paragraph_format.space_before = Pt(0)
@@ -148,27 +94,34 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
             p2.paragraph_format.space_before = Pt(0)
             p2.paragraph_format.space_after = Pt(0)
 
-    # === Output BytesIO ===
+        if i + 2 < len(images):
+            doc.add_page_break()
+
+    # === Save to BytesIO for download ===
     output = io.BytesIO()
     doc.save(output)
     output.seek(0)
     return output
 
-# === UI Inputs ===
+# === Streamlit Inputs ===
 weather = st.text_input("Weather Conditions (°C)")
 max_dim = st.number_input("Max image dimension (px)", min_value=500, max_value=5000, value=1300)
 quality = st.slider("JPEG Quality (1 = small file, 100 = high quality)", 1, 100, 95)
+
 subcontractors = st.text_area("Subcontractors (one per line)").split("\n")
 areas = st.text_area("Areas of Work (one per line)").split("\n")
+
 uploaded_files = st.file_uploader("Upload Site Images", type=['jpg', 'jpeg'], accept_multiple_files=True)
 
-# === Generate Button ===
+# === Button to Generate Report ===
 if st.button("Generate Report"):
     if not uploaded_files:
         st.warning("Please upload at least one image.")
     else:
         with st.spinner("Generating report..."):
+            # Sort images by number in filename
             uploaded_files.sort(key=lambda f: extract_number(f.name))
+
             temp_images = []
             for file in uploaded_files:
                 img = resize_image(file.read(), max_dim)
