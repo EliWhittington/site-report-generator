@@ -41,7 +41,7 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
 
     # === Static Fields ===
     project_name = "National Fire Cache Building                                        -"
-    user_name = "Eli Whittington1"
+    user_name = "Eli Whittington12"
     email = "eli.whittington@pc.gc.ca"
     address = "200 Hawk Ave, Banff AB T1L1K2"
     review_date = today_str
@@ -78,13 +78,20 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
     doc.add_page_break()
 
     # === Insert 2 Images Per Page ===
+    # === Insert 2 Images Per Page (no forced page breaks) ===
     for i in range(0, len(images), 2):
+        # First image
         doc.add_picture(images[i], width=Inches(5.93), height=Inches(4.45))
         doc.paragraphs[-1].alignment = 1  # Center
+
+        # Second image, if available
         if i + 1 < len(images):
             doc.add_picture(images[i + 1], width=Inches(5.93), height=Inches(4.45))
             doc.paragraphs[-1].alignment = 1  # Center
-        doc.add_paragraph()  # small spacing between pairs
+
+        # Small vertical space between image pairs
+        #doc.add_paragraph()
+
 
 
     # === Save to BytesIO for download ===
