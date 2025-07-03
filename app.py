@@ -80,11 +80,11 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
     # === Insert 2 Images Per Page ===
     # === Insert 2 Images Per Page (no forced page breaks) ===
     for i in range(0, len(images), 2):
-        doc.add_picture(images[i], width=Inches(2), height=Inches(2))
+        doc.add_picture(images[i], width=Inches(5.60), height=Inches(4.2))
         doc.paragraphs[-1].alignment = 1  # Center
 
         if i + 1 < len(images):
-            doc.add_picture(images[i + 1], width=Inches(2), height=Inches(2))
+            doc.add_picture(images[i + 1], width=Inches(5.60), height=Inches(4.2))
             doc.paragraphs[-1].alignment = 1  # Center
 
     # === Insert a page break after every pair of images ===
