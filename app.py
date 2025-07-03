@@ -1,6 +1,9 @@
 import streamlit as st
 from docx import Document
 from docx.shared import Inches, Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 from PIL import Image, ImageOps
 from datetime import date
 import os
@@ -25,9 +28,35 @@ def resize_image(image_bytes, max_dim):
     img.thumbnail((max_dim, max_dim))
     return img
 
+# === Add footer with page number ===
+def add_footer_with_page_number(section):
+    footer = section.footer
+    paragraph = footer.paragraphs[0]
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    run = paragraph.add_run()
+
+    fldChar1 = OxmlElement('w:fldChar')
+    fldChar1.set(qn('w:fldCharType'), 'begin')
+
+    instrText = OxmlElement('w:instrText')
+    instrText.set(qn('xml:space'), 'preserve')
+    instrText.text = "PAGE"
+
+    fldChar2 = OxmlElement('w:fldChar')
+    fldChar2.set(qn('w:fldCharType'), 'separate')
+
+    fldChar3 = OxmlElement('w:fldChar')
+    fldChar3.set(qn('w:fldCharType'), 'end')
+
+    run._r.extend([fldChar1, instrText, fldChar2, fldChar3])
+
 # === Generate the report ===
 def generate_report(images, weather, subcontractors, areas, max_dim, quality):
     doc = Document()
+
+    # Add footer page number to section
+    section = doc.sections[0]
+    add_footer_with_page_number(section)
 
     # === Title ===
     title_paragraph = doc.add_paragraph()
@@ -77,10 +106,10 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
 
     doc.add_page_break()
 
-    # === Insert 2 Images Per Page ===
+    # === Insert 2 Images Per Page (no blank pages) ===
     for i in range(0, len(images), 2):
         p1 = doc.add_paragraph()
-        p1.alignment = 1  # Center
+        p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
         run1 = p1.add_run()
         run1.add_picture(images[i], width=Inches(5.93), height=Inches(4.45))
         p1.paragraph_format.space_before = Pt(0)
@@ -88,12 +117,13 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
 
         if i + 1 < len(images):
             p2 = doc.add_paragraph()
-            p2.alignment = 1
+            p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
             run2 = p2.add_run()
             run2.add_picture(images[i + 1], width=Inches(5.93), height=Inches(4.45))
             p2.paragraph_format.space_before = Pt(0)
             p2.paragraph_format.space_after = Pt(0)
 
+        # Add page break only if more images remain
         if i + 2 < len(images):
             doc.add_page_break()
 
