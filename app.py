@@ -41,7 +41,7 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
 
     # === Static Fields ===
     project_name = "National Fire Cache Building                                        -"
-    user_name = "Eli Whittington1"
+    user_name = "Eli Whittington"
     email = "eli.whittington@pc.gc.ca"
     address = "200 Hawk Ave, Banff AB T1L1K2"
     review_date = today_str
@@ -77,9 +77,9 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
 
     doc.add_page_break()
 
-    # === Insert 2 Images Per Page ===
-    # === Insert 2 Images Per Page (no forced page breaks) ===
+    # === Insert 2 Images Per Page, no spacing between them ===
     for i in range(0, len(images), 2):
+        # First image
         p1 = doc.add_paragraph()
         p1.alignment = 1  # Center
         run1 = p1.add_run()
@@ -87,7 +87,8 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
         p1.paragraph_format.space_before = Pt(0)
         p1.paragraph_format.space_after = Pt(0)
 
-       if i + 1 < len(images):
+        # Second image, if available
+        if i + 1 < len(images):
             p2 = doc.add_paragraph()
             p2.alignment = 1
             run2 = p2.add_run()
@@ -95,9 +96,8 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
             p2.paragraph_format.space_before = Pt(0)
             p2.paragraph_format.space_after = Pt(0)
 
-    # === Insert a page break after every pair of images ===
-            #doc.add_page_break()
-
+        # Optional: insert page break after every pair
+        # doc.add_page_break()
 
     # === Save to BytesIO for download ===
     output = io.BytesIO()
@@ -121,7 +121,6 @@ if st.button("Generate Report"):
         st.warning("Please upload at least one image.")
     else:
         with st.spinner("Generating report..."):
-            # Sort images by number in filename
             uploaded_files.sort(key=lambda f: extract_number(f.name))
 
             temp_images = []
