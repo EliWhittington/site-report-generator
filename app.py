@@ -96,7 +96,7 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
             p2.paragraph_format.space_after = Pt(0)
 
     # === Insert a page break after every pair of images ===
-        #doc.add_page_break()
+            #doc.add_page_break()
 
 
     # === Save to BytesIO for download ===
