@@ -41,7 +41,7 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
 
     # === Static Fields ===
     project_name = "National Fire Cache Building                                        -"
-    user_name = "Eli Whittington"
+    user_name = "Eli Whittington1"
     email = "eli.whittington@pc.gc.ca"
     address = "200 Hawk Ave, Banff AB T1L1K2"
     review_date = today_str
