@@ -51,14 +51,14 @@ def add_footer_with_page_number(section):
     run._r.extend([fldChar1, instrText, fldChar2, fldChar3])
 
 # === Generate the report ===
-def generate_report(images, weather, subcontractors, areas, max_dim, quality):
+def generate_report(uploaded_files, weather, subcontractors, areas, max_dim, quality):
     doc = Document()
 
-    # Add footer page number to section
+    # Footer with page numbers
     section = doc.sections[0]
     add_footer_with_page_number(section)
 
-    # === Title ===
+    # === Title Page ===
     title_paragraph = doc.add_paragraph()
     title_paragraph.alignment = 1  # Center
     run = title_paragraph.add_run("Project Observation Report")
@@ -73,7 +73,6 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
     user_name = "Eli Whittington"
     email = "eli.whittington@pc.gc.ca"
     address = "200 Hawk Ave, Banff AB T1L1K2"
-    review_date = today_str
 
     def add_field(label, value):
         p = doc.add_paragraph()
@@ -88,14 +87,13 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
     add_field("Project", project_name)
     add_field("Name", user_name)
     add_field("Email", email)
-    add_field("Review Date", review_date)
+    add_field("Review Date", today_str)
     add_field("Report Date", today_str)
     add_field("Address", address)
     add_field("Conditions", f"{weather} °C")
 
     doc.add_paragraph()  # Spacing
 
-    # === Subcontractors ===
     doc.add_paragraph("Subcontractors Present:", style="Heading 2")
     for s in subcontractors:
         doc.add_paragraph(f"    - {s}")
@@ -106,28 +104,36 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
 
     doc.add_page_break()
 
-    # === Insert 2 Images Per Page (no blank pages) ===
-    for i in range(0, len(images), 2):
+    # === Insert images one by one ===
+    for i in range(0, len(uploaded_files), 2):
+        # First image
+        img1 = resize_image(uploaded_files[i].read(), max_dim)
+        temp1 = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+        img1.save(temp1.name, format="JPEG", quality=quality, optimize=True)
+
         p1 = doc.add_paragraph()
         p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run1 = p1.add_run()
-        run1.add_picture(images[i], width=Inches(5.73), height=Inches(4.3))
+        p1.add_run().add_picture(temp1.name, width=Inches(5.93), height=Inches(4.45))
         p1.paragraph_format.space_before = Pt(0)
         p1.paragraph_format.space_after = Pt(0)
 
-        if i + 1 < len(images):
+        # Second image (optional)
+        if i + 1 < len(uploaded_files):
+            img2 = resize_image(uploaded_files[i + 1].read(), max_dim)
+            temp2 = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+            img2.save(temp2.name, format="JPEG", quality=quality, optimize=True)
+
             p2 = doc.add_paragraph()
             p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            run2 = p2.add_run()
-            run2.add_picture(images[i + 1], width=Inches(5.73), height=Inches(4.3))
+            p2.add_run().add_picture(temp2.name, width=Inches(5.93), height=Inches(4.45))
             p2.paragraph_format.space_before = Pt(0)
             p2.paragraph_format.space_after = Pt(0)
 
-        # Add page break only if more images remain
-        if i + 2 < len(images):
+        # Page break only if more remain
+        if i + 2 < len(uploaded_files):
             doc.add_page_break()
 
-    # === Save to BytesIO for download ===
+    # Save to BytesIO for download
     output = io.BytesIO()
     doc.save(output)
     output.seek(0)
@@ -135,30 +141,21 @@ def generate_report(images, weather, subcontractors, areas, max_dim, quality):
 
 # === Streamlit Inputs ===
 weather = st.text_input("Weather Conditions (°C)")
-max_dim = st.number_input("Max image dimension (px)", min_value=500, max_value=5000, value=1300)
-quality = st.slider("JPEG Quality (1 = small file, 100 = high quality)", 1, 100, 95)
+max_dim = st.number_input("Max image dimension (px)", min_value=500, max_value=5000, value=1000)
+quality = st.slider("JPEG Quality (1 = small file, 100 = high quality)", 1, 100, 90)
 
 subcontractors = st.text_area("Subcontractors (one per line)").split("\n")
 areas = st.text_area("Areas of Work (one per line)").split("\n")
 
 uploaded_files = st.file_uploader("Upload Site Images", type=['jpg', 'jpeg'], accept_multiple_files=True)
 
-# === Button to Generate Report ===
+# === Generate Report Button ===
 if st.button("Generate Report"):
     if not uploaded_files:
         st.warning("Please upload at least one image.")
     else:
         with st.spinner("Generating report..."):
-            # Sort images by number in filename
             uploaded_files.sort(key=lambda f: extract_number(f.name))
-
-            temp_images = []
-            for file in uploaded_files:
-                img = resize_image(file.read(), max_dim)
-                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
-                img.save(temp_file.name, format="JPEG", quality=quality, optimize=True)
-                temp_images.append(temp_file.name)
-
-            report_bytes = generate_report(temp_images, weather, subcontractors, areas, max_dim, quality)
+            report_bytes = generate_report(uploaded_files, weather, subcontractors, areas, max_dim, quality)
             st.success("Report generated!")
             st.download_button("📄 Download Report", report_bytes, file_name="Progress_Report.docx")
