@@ -105,9 +105,8 @@ def generate_report(uploaded_files, weather, subcontractors, areas, max_dim, qua
     doc.add_page_break()
 
     # === Insert images one by one ===
-    # === Insert images one by one ===
     for i in range(0, len(uploaded_files), 2):
-    # First image
+        # First image
         uploaded_files[i].seek(0)
         img1 = resize_image(uploaded_files[i].read(), max_dim)
         temp1 = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
@@ -115,11 +114,12 @@ def generate_report(uploaded_files, weather, subcontractors, areas, max_dim, qua
 
         p1 = doc.add_paragraph()
         p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p1.add_run().add_picture(temp1.name, width=Inches(5.73), height=Inches(4.3))
         p1.paragraph_format.space_before = Pt(0)
         p1.paragraph_format.space_after = Pt(0)
+        p1.paragraph_format.line_spacing = Pt(1)
+        p1.add_run().add_picture(temp1.name, width=Inches(5.93), height=Inches(4.2))
 
-    # Second image (only if it exists)
+        # Second image (optional)
         if i + 1 < len(uploaded_files):
             uploaded_files[i + 1].seek(0)
             img2 = resize_image(uploaded_files[i + 1].read(), max_dim)
@@ -128,11 +128,12 @@ def generate_report(uploaded_files, weather, subcontractors, areas, max_dim, qua
 
             p2 = doc.add_paragraph()
             p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p2.add_run().add_picture(temp2.name, width=Inches(5.73), height=Inches(4.3))
             p2.paragraph_format.space_before = Pt(0)
             p2.paragraph_format.space_after = Pt(0)
+            p2.paragraph_format.line_spacing = Pt(1)
+            p2.add_run().add_picture(temp2.name, width=Inches(5.93), height=Inches(4.2))
 
-    # Add a page break ONLY if more images remain
+        # Page break only if more remain
         if i + 2 < len(uploaded_files):
             doc.add_page_break()
 
@@ -146,18 +147,29 @@ def generate_report(uploaded_files, weather, subcontractors, areas, max_dim, qua
 weather = st.text_input("Weather Conditions (°C)")
 max_dim = st.number_input("Max image dimension (px)", min_value=500, max_value=5000, value=1000)
 quality = st.slider("JPEG Quality (1 = small file, 100 = high quality)", 1, 100, 90)
-
 subcontractors = st.text_area("Subcontractors (one per line)").split("\n")
 areas = st.text_area("Areas of Work (one per line)").split("\n")
 
-uploaded_files = st.file_uploader("Upload Site Images", type=['jpg', 'jpeg'], accept_multiple_files=True)
+# === Manage uploaded files using session state ===
+if "uploaded_files" not in st.session_state:
+    st.session_state.uploaded_files = []
+
+uploaded = st.file_uploader("Upload Site Images", type=['jpg', 'jpeg'], accept_multiple_files=True)
+if uploaded:
+    st.session_state.uploaded_files = uploaded
+
+# === Clear uploaded images button ===
+if st.button("🗑️ Clear Uploaded Images"):
+    st.session_state.uploaded_files = []
+    st.experimental_rerun()
 
 # === Generate Report Button ===
 if st.button("Generate Report"):
-    if not uploaded_files:
+    if not st.session_state.uploaded_files:
         st.warning("Please upload at least one image.")
     else:
         with st.spinner("Generating report..."):
+            uploaded_files = st.session_state.uploaded_files
             uploaded_files.sort(key=lambda f: extract_number(f.name))
             report_bytes = generate_report(uploaded_files, weather, subcontractors, areas, max_dim, quality)
             st.success("Report generated!")
