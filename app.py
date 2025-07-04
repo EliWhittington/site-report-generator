@@ -115,7 +115,7 @@ def generate_report(uploaded_files, weather, subcontractors, areas, max_dim, qua
 
         p1 = doc.add_paragraph()
         p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p1.add_run().add_picture(temp1.name, width=Inches(5.93), height=Inches(4.45))
+        p1.add_run().add_picture(temp1.name, width=Inches(5.73), height=Inches(4.3))
         p1.paragraph_format.space_before = Pt(0)
         p1.paragraph_format.space_after = Pt(0)
 
@@ -128,7 +128,7 @@ def generate_report(uploaded_files, weather, subcontractors, areas, max_dim, qua
 
             p2 = doc.add_paragraph()
             p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p2.add_run().add_picture(temp2.name, width=Inches(5.93), height=Inches(4.45))
+            p2.add_run().add_picture(temp2.name, width=Inches(5.73), height=Inches(4.3))
             p2.paragraph_format.space_before = Pt(0)
             p2.paragraph_format.space_after = Pt(0)
 
