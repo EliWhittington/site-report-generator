@@ -105,33 +105,36 @@ def generate_report(uploaded_files, weather, subcontractors, areas, max_dim, qua
     doc.add_page_break()
 
     # === Insert images one by one ===
-    for i in range(0, len(uploaded_files), 2):
-        # First image
-        img1 = resize_image(uploaded_files[i].read(), max_dim)
-        temp1 = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
-        img1.save(temp1.name, format="JPEG", quality=quality, optimize=True)
+    # === Insert images one by one ===
+for i in range(0, len(uploaded_files), 2):
+    # First image
+    uploaded_files[i].seek(0)
+    img1 = resize_image(uploaded_files[i].read(), max_dim)
+    temp1 = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+    img1.save(temp1.name, format="JPEG", quality=quality, optimize=True)
 
-        p1 = doc.add_paragraph()
-        p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        p1.add_run().add_picture(temp1.name, width=Inches(5.93), height=Inches(4.45))
-        p1.paragraph_format.space_before = Pt(0)
-        p1.paragraph_format.space_after = Pt(0)
+    p1 = doc.add_paragraph()
+    p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p1.add_run().add_picture(temp1.name, width=Inches(5.93), height=Inches(4.45))
+    p1.paragraph_format.space_before = Pt(0)
+    p1.paragraph_format.space_after = Pt(0)
 
-        # Second image (optional)
-        if i + 1 < len(uploaded_files):
-            img2 = resize_image(uploaded_files[i + 1].read(), max_dim)
-            temp2 = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
-            img2.save(temp2.name, format="JPEG", quality=quality, optimize=True)
+    # Second image (only if it exists)
+    if i + 1 < len(uploaded_files):
+        uploaded_files[i + 1].seek(0)
+        img2 = resize_image(uploaded_files[i + 1].read(), max_dim)
+        temp2 = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+        img2.save(temp2.name, format="JPEG", quality=quality, optimize=True)
 
-            p2 = doc.add_paragraph()
-            p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p2.add_run().add_picture(temp2.name, width=Inches(5.93), height=Inches(4.45))
-            p2.paragraph_format.space_before = Pt(0)
-            p2.paragraph_format.space_after = Pt(0)
+        p2 = doc.add_paragraph()
+        p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p2.add_run().add_picture(temp2.name, width=Inches(5.93), height=Inches(4.45))
+        p2.paragraph_format.space_before = Pt(0)
+        p2.paragraph_format.space_after = Pt(0)
 
-        # Page break only if more remain
-        if i + 2 < len(uploaded_files):
-            doc.add_page_break()
+    # Add a page break ONLY if more images remain
+    if i + 2 < len(uploaded_files):
+        doc.add_page_break()
 
     # Save to BytesIO for download
     output = io.BytesIO()
