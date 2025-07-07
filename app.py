@@ -11,7 +11,7 @@ import io
 import re
 import tempfile
 
-# === Streamlit App Config ===
+# ==== Streamlit App Config ====
 st.set_page_config(page_title="Site Report Generator", layout="wide")
 st.title("📷 Site Observation Report Generator")
 
