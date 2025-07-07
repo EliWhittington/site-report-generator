@@ -51,10 +51,10 @@ def add_footer_with_page_number(section):
     run._r.extend([fldChar1, instrText, fldChar2, fldChar3])
 
 # === Generate the report ===
-def generate_report(uploaded_files, weather, subcontractors, areas, max_dim, quality):
+def generate_report(image_paths, weather, subcontractors, areas):
     doc = Document()
 
-    # Footer with page numbers
+    # Add footer with page numbers
     section = doc.sections[0]
     add_footer_with_page_number(section)
 
@@ -92,7 +92,7 @@ def generate_report(uploaded_files, weather, subcontractors, areas, max_dim, qua
     add_field("Address", address)
     add_field("Conditions", f"{weather} °C")
 
-    doc.add_paragraph()  # Spacing
+    doc.add_paragraph()  # spacing
 
     doc.add_paragraph("Subcontractors Present:", style="Heading 2")
     for s in subcontractors:
@@ -104,37 +104,24 @@ def generate_report(uploaded_files, weather, subcontractors, areas, max_dim, qua
 
     doc.add_page_break()
 
-    # === Insert images one by one ===
-    for i in range(0, len(uploaded_files), 2):
-        # First image
-        uploaded_files[i].seek(0)
-        img1 = resize_image(uploaded_files[i].read(), max_dim)
-        temp1 = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
-        img1.save(temp1.name, format="JPEG", quality=quality, optimize=True)
-
+    # === Insert 2 Images Per Page (no blank pages) ===
+    for i in range(0, len(image_paths), 2):
         p1 = doc.add_paragraph()
         p1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run1 = p1.add_run()
+        run1.add_picture(image_paths[i], width=Inches(5.6), height=Inches(4.2))
         p1.paragraph_format.space_before = Pt(0)
         p1.paragraph_format.space_after = Pt(0)
-        p1.paragraph_format.line_spacing = Pt(1)
-        p1.add_run().add_picture(temp1.name, width=Inches(5.6), height=Inches(4.2))
 
-        # Second image (optional)
-        if i + 1 < len(uploaded_files):
-            uploaded_files[i + 1].seek(0)
-            img2 = resize_image(uploaded_files[i + 1].read(), max_dim)
-            temp2 = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
-            img2.save(temp2.name, format="JPEG", quality=quality, optimize=True)
-
+        if i + 1 < len(image_paths):
             p2 = doc.add_paragraph()
             p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run2 = p2.add_run()
+            run2.add_picture(image_paths[i + 1], width=Inches(5.6), height=Inches(4.2))
             p2.paragraph_format.space_before = Pt(0)
             p2.paragraph_format.space_after = Pt(0)
-            p2.paragraph_format.line_spacing = Pt(1)
-            p2.add_run().add_picture(temp2.name, width=Inches(5.6), height=Inches(4.2))
 
-        # Page break only if more remain
-        if i + 2 < len(uploaded_files):
+        if i + 2 < len(image_paths):
             doc.add_page_break()
 
     # Save to BytesIO for download
@@ -155,13 +142,20 @@ if "uploaded_files" not in st.session_state:
     st.session_state.uploaded_files = []
 
 uploaded = st.file_uploader("Upload Site Images", type=['jpg', 'jpeg'], accept_multiple_files=True)
-if uploaded:
+
+# Prevent repopulation after clearing
+if uploaded is not None and st.session_state.get("clear_triggered") is not True:
     st.session_state.uploaded_files = uploaded
 
 # === Clear uploaded images button ===
 if st.button("🗑️ Clear Uploaded Images"):
     st.session_state.uploaded_files = []
+    st.session_state.clear_triggered = True
     st.rerun()
+
+# Reset clear flag
+if "clear_triggered" in st.session_state:
+    del st.session_state.clear_triggered
 
 # === Generate Report Button ===
 if st.button("Generate Report"):
@@ -171,6 +165,15 @@ if st.button("Generate Report"):
         with st.spinner("Generating report..."):
             uploaded_files = st.session_state.uploaded_files
             uploaded_files.sort(key=lambda f: extract_number(f.name))
-            report_bytes = generate_report(uploaded_files, weather, subcontractors, areas, max_dim, quality)
+
+            # Resize and save all images to temp paths
+            temp_image_paths = []
+            for file in uploaded_files:
+                img = resize_image(file.read(), max_dim)
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+                img.save(temp_file.name, format="JPEG", quality=quality, optimize=True)
+                temp_image_paths.append(temp_file.name)
+
+            report_bytes = generate_report(temp_image_paths, weather, subcontractors, areas)
             st.success("Report generated!")
             st.download_button("📄 Download Report", report_bytes, file_name="Progress_Report.docx")
