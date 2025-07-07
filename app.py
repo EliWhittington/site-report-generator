@@ -117,7 +117,7 @@ def generate_report(uploaded_files, weather, subcontractors, areas, max_dim, qua
         p1.paragraph_format.space_before = Pt(0)
         p1.paragraph_format.space_after = Pt(0)
         p1.paragraph_format.line_spacing = Pt(1)
-        p1.add_run().add_picture(temp1.name, width=Inches(5.93), height=Inches(4.2))
+        p1.add_run().add_picture(temp1.name, width=Inches(5.6), height=Inches(4.2))
 
         # Second image (optional)
         if i + 1 < len(uploaded_files):
@@ -131,7 +131,7 @@ def generate_report(uploaded_files, weather, subcontractors, areas, max_dim, qua
             p2.paragraph_format.space_before = Pt(0)
             p2.paragraph_format.space_after = Pt(0)
             p2.paragraph_format.line_spacing = Pt(1)
-            p2.add_run().add_picture(temp2.name, width=Inches(5.93), height=Inches(4.2))
+            p2.add_run().add_picture(temp2.name, width=Inches(5.6), height=Inches(4.2))
 
         # Page break only if more remain
         if i + 2 < len(uploaded_files):
