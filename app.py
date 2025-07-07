@@ -161,7 +161,7 @@ if uploaded:
 # === Clear uploaded images button ===
 if st.button("🗑️ Clear Uploaded Images"):
     st.session_state.uploaded_files = []
-    st.experimental_rerun()
+    st.rerun()
 
 # === Generate Report Button ===
 if st.button("Generate Report"):
